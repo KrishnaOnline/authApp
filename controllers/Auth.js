@@ -58,7 +58,7 @@ exports.login = async(req, res) => {
             })
         }
 
-        const user = await User.findOne({email});
+        let user = await User.findOne({email});
 
         if(!user) {
             return res.status(401).json({
@@ -71,17 +71,27 @@ exports.login = async(req, res) => {
 
         const payload = {
             email: user.email,
+            role: user.role,
+            id: user._id,
         }
 
         if(passCheck) {
-            const token = await jwt.sign(payload, process.env.JWT_SECRET_KEY);
+            let token = jwt.sign(payload, process.env.JWT_SECRET_KEY);
+
+            user = user.toObject();
+            user.token = token;
+            user.password = undefined;
+
+            console.log(user);
 
             res.cookie('token', token).status(200).json({
                 success: true,
+                token,
+                user,
                 message: "User LoggedIn Successfully",
             })
         } else {
-            return res.status(400).json({
+            return res.status(403).json({
                 success: false,
                 message: "Incorrect Password",
             })
